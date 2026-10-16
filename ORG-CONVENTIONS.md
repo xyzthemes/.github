@@ -72,7 +72,7 @@ jobs) run as named, interactive agents in visible panes, not as hidden subagents
      external `@imports` from the parent HQ. Answer No, so the builder doesn't load HQ-only rules.
   4. Send the brief with `herdr agent prompt <job> "<brief path + task>"`.
 - **Watch, don't poll by hand:** one background watcher emits a line when an agent's state changes to anything other
-  than `working` (`idle`, `done`, `blocked` or gone). It also checks weekly usage every ~10 min and stops at 74%. A
+  than `working` (`idle`, `done`, `blocked` or gone). It also checks weekly usage every ~10 min and stops at 74%, a one-point buffer under the §5 limit of 75%. A
   `blocked` agent means a dialog: read it with `herdr agent read <job>` before answering. Never pick an option that
   widens the owner's global settings.
 - **Hand-off:** the agent writes its report to a file in your HQ and replies "REPORT READY". The orchestrator commits.
