@@ -48,3 +48,33 @@ here reads this first. It is public, so it holds no secrets.
 - Never print or commit credentials (`~/.salla/config.json`, Shopify CLI tokens, `.env` files, auto-login URLs).
 - Merging: each repo's `docs/WORKFLOW.md` states its merge policy. Delegation for one platform's repos does not
   extend to the other's.
+
+## 6. Run agents where the owner can watch them (herdr)
+The owner uses [herdr](https://herdr.dev), a terminal workspace manager. Long jobs (builders, critics, shot or upload
+jobs) run as named, interactive agents in visible panes, not as hidden subagents. Each factory has its own workspace.
+- **Check first:** `test "$HERDR_ENV" = 1`. The installed CLI is the authority, so start with `herdr --help` and
+  `herdr --skill`.
+- **Workspace per factory:** `herdr workspace create --label <platform>-batch-<n> --cwd <hq> --no-focus` (Salla uses
+  `salla-batch-2`).
+  - **Tab `monitor`:** split the root pane right, then split the right pane down. Run:
+    - `LANG=C.UTF-8 btop` on the left (CPU, RAM, disk, net);
+    - a board script top right (load, memory, whether the heavy lock is held, `herdr agent list`, the ledger's
+      `Next up:`, refreshed every 30 s);
+    - a per-command memory/CPU, disk and swap view bottom right (`ps -eo rss=,pcpu=,comm=` grouped).
+  - **Tab `agents`:** a 2×2 grid of panes named `slot-1..4`. Each shows a "free" line until an agent starts there.
+    At most 3 heavy slots at once; the 4th is for a light job. The 3–4 heavy-agent cap in §4 still covers both
+    factories combined.
+- **Start an agent in a free slot:**
+  1. `herdr pane rename <pane> <job>`, then `herdr pane run <pane> "cd <worktree>"`.
+  2. `herdr agent start <job> --kind claude --pane <pane> -- --model sonnet --permission-mode auto --add-dir <hq>`.
+     `--add-dir` lets it read your briefs without asking for every read outside its folder.
+  3. On first start in a new folder it asks "trust this folder" (answer Yes for your own worktrees) and whether to allow
+     external `@imports` from the parent HQ. Answer No, so the builder doesn't load HQ-only rules.
+  4. Send the brief with `herdr agent prompt <job> "<brief path + task>"`.
+- **Watch, don't poll by hand:** one background watcher emits a line when an agent's state changes to anything other
+  than `working` (`idle`, `done`, `blocked` or gone). It also checks weekly usage every ~10 min and stops at 74%. A
+  `blocked` agent means a dialog: read it with `herdr agent read <job>` before answering. Never pick an option that
+  widens the owner's global settings.
+- **Hand-off:** the agent writes its report to a file in your HQ and replies "REPORT READY". The orchestrator commits.
+  Close the pane or restore its "free" line when the job ends.
+- **Don't** control or read the other factory's workspace or agents.
